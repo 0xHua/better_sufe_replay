@@ -1,0 +1,215 @@
+/* 播放器：无圆角、无阴影、无动画，只两种颜色 */
+:root{
+  --accent:#8b1d2c;
+  --accent-ink:#a3222f;
+  --bg:#f4f5f7;
+  --panel:#ffffff;
+  --ink:#1d1f23;
+  --dim:#565b63;
+  --faint:#8a9099;
+  --line:#e2e4e8;
+  --line2:#cfd2d8;
+  --sel:#f7e9eb;
+}
+:root[data-theme="dark"]{
+  --accent:#b3374a;
+  --accent-ink:#d2647a;
+  --bg:#16181c;
+  --panel:#1c1f24;
+  --ink:#e7e9ec;
+  --dim:#a3a9b2;
+  --faint:#767c86;
+  --line:#2a2e35;
+  --line2:#3a3f47;
+  --sel:#2a2023;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:13px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  overflow:hidden;
+}
+[hidden]{display:none !important}
+.app{display:flex;height:100vh;overflow:hidden}
+.stage{height:100%;flex:1 1 auto;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+
+/* 顶栏 */
+.bar{
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;height:46px;flex:0 0 46px;
+  background:var(--panel);border-bottom:1px solid var(--line);
+}
+.back{color:var(--accent-ink);text-decoration:none;font-size:16px;padding:0 4px;line-height:1}
+.back:hover{color:var(--accent)}
+.name{font-weight:600;max-width:52vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{color:var(--faint);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbtn{
+  font:inherit;font-size:12px;color:var(--dim);
+  background:transparent;border:1px solid var(--line2);padding:3px 10px;cursor:pointer;
+}
+.tbtn:hover{color:var(--accent-ink);border-color:var(--accent)}
+.tbtn.on{border-color:var(--accent);color:var(--accent-ink)}
+.bar .spacer{flex:1 1 auto;min-width:8px}
+
+/* 画面区：1 路 / 2 路（左右、上下、小窗） */
+.vwrap{position:relative;flex:1 1 0;background:#000;min-height:0;display:flex;overflow:hidden}
+.vwrap[data-mode="side"]{flex-direction:row}
+.vwrap[data-mode="stack"]{flex-direction:column}
+.cell{position:relative;flex:1 1 0;min-width:0;min-height:0;background:#000;display:flex;align-items:center;justify-content:center}
+.cell video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.vwrap[data-mode="side"] .cell + .cell{border-left:1px solid #000}
+.vwrap[data-mode="stack"] .cell + .cell{border-top:1px solid #000}
+.vwrap[data-mode="pip"] .pip-on{
+  position:absolute;left:0;top:0;width:32%;height:auto;
+  aspect-ratio:16/9;flex:0 0 auto;border:1px solid var(--line2);z-index:3;background:#000;
+}
+.vwrap[data-mode="pip"] .pip-on video{cursor:move}
+.hint{color:var(--faint);font-size:11.5px}
+.tag{
+  position:absolute;left:8px;top:8px;z-index:2;
+  font-size:11px;color:#e9eaee;background:rgba(0,0,0,.5);padding:1px 6px;pointer-events:none;
+}
+.overlay{
+  position:absolute;inset:0;z-index:2;display:grid;place-items:center;
+  color:#cfd2d8;font-size:13px;background:#000;pointer-events:none;text-align:center;
+  padding:12px 22px;overflow:hidden;overflow-wrap:anywhere;line-height:1.5;
+}
+.overlay.hide{display:none}
+.overlay.err{color:#e4a3ab}
+.wm{position:absolute;inset:0;pointer-events:none;overflow:hidden;color:rgba(255,255,255,.34);font-size:11.5px;z-index:1}
+.wm span{position:absolute;white-space:nowrap}
+
+/* 播放控制 */
+.ctrl{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line)}
+.seek{padding:9px 14px 3px;cursor:pointer}
+.track{position:relative;height:4px;background:var(--line2)}
+.buf{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--line2);opacity:.85}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent)}
+.knob{
+  position:absolute;top:50%;left:0;width:9px;height:9px;margin-left:-4.5px;
+  transform:translateY(-50%);background:var(--accent);display:none;
+}
+.seek:hover .knob{display:block}
+
+.row{display:flex;align-items:center;gap:10px;padding:4px 14px 10px}
+.ibtn{
+  font:inherit;font-size:14px;line-height:1;color:var(--ink);
+  background:transparent;border:1px solid transparent;padding:5px 7px;cursor:pointer;
+}
+.ibtn:hover{color:var(--accent-ink);border-color:var(--line2)}
+.ibtn.play{font-size:15px;min-width:34px}
+.time{color:var(--faint);font-variant-numeric:tabular-nums;font-size:12px}
+.time b{color:var(--ink);font-weight:600}
+.time i{font-style:normal;margin:0 4px;color:var(--line2)}
+.spacer{flex:1 1 auto}
+
+.pick select{
+  font:inherit;font-size:12px;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line2);padding:3px 4px;cursor:pointer;
+}
+.pick select:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+/* 屏幕 / 位置 / 同步 / 音量：播放栏下面单独一排 */
+.opts{
+  flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;
+  padding:7px 14px;background:var(--panel);border-top:1px solid var(--line);
+  font-size:12px;color:var(--dim);
+}
+.grp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.grp.grow{margin-left:auto;flex:0 1 auto;justify-content:flex-end;row-gap:6px}
+.lbl{color:var(--faint);font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line2)}
+.seg button{
+  font:inherit;font-size:12px;color:var(--dim);background:transparent;border:0;
+  padding:3px 10px;cursor:pointer;border-left:1px solid var(--line2);
+}
+.seg button:first-child{border-left:0}
+.seg button:hover{color:var(--accent-ink)}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button:disabled{color:var(--line2);cursor:not-allowed}
+.chk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--dim)}
+.chk input{accent-color:var(--accent);margin:0}
+.off{display:inline-flex;align-items:center;gap:6px}
+.off input[type=range]{width:118px;accent-color:var(--accent)}
+.off b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.mini{
+  font:inherit;font-size:12px;line-height:1;color:var(--dim);
+  background:transparent;border:1px solid var(--line2);padding:2px 6px;cursor:pointer;
+}
+.mini:hover{color:var(--accent-ink);border-color:var(--accent)}
+.ach{display:inline-flex;align-items:center;gap:6px}
+.ach i{font-style:normal;color:var(--faint);font-size:11px}
+.vrange{
+  -webkit-appearance:none;appearance:none;width:88px;height:4px;
+  background:var(--line2);outline:none;cursor:pointer;
+}
+.vrange::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:14px;background:var(--accent);border:none}
+.vrange::-moz-range-thumb{width:9px;height:14px;background:var(--accent);border:none}
+
+/* 全屏：只留画面与控制 */
+.stage:fullscreen{background:#000}
+.stage:fullscreen .bar{display:none}
+
+/* ---------------- 右侧栏（概要 / 知识要点 / PPT / 字幕） ---------------- */
+.side{
+  flex:0 0 340px;display:flex;flex-direction:column;min-width:0;
+  background:var(--panel);border-left:1px solid var(--line);
+}
+.tabs{display:flex;flex:0 0 auto;border-bottom:1px solid var(--line)}
+.tabs button{
+  flex:1 1 0;font:inherit;font-size:12px;padding:8px 2px;cursor:pointer;
+  background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);
+}
+.tabs button:hover{color:var(--accent-ink)}
+.tabs button.on{color:var(--accent-ink);border-bottom-color:var(--accent);font-weight:600}
+
+.pane{flex:1 1 auto;min-height:0;overflow:auto;padding:10px 12px}
+.ph{color:var(--faint);font-size:12px;padding:6px 0}
+.perr{color:var(--accent-ink);font-size:12px;padding:6px 0}
+
+/* 概要 */
+.sumtxt{font-size:12.5px;line-height:1.8;color:var(--ink);margin:0 0 2px}
+.kw{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.kw span{border:1px solid var(--line2);padding:1px 7px;font-size:11.5px;color:var(--dim)}
+.sec{margin:12px 0 4px;font-size:11.5px;color:var(--faint);letter-spacing:.04em}
+
+/* 知识要点 */
+.ch{border-bottom:1px solid var(--line);padding:9px 0}
+.ch:last-child{border-bottom:0}
+.chh{display:flex;gap:8px;align-items:baseline;cursor:pointer}
+.chh:hover .cht{color:var(--accent-ink)}
+.cht{font-weight:600;font-size:13px}
+.tmm{color:var(--accent-ink);font-size:11.5px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.chc{color:var(--dim);font-size:12px;line-height:1.7;margin:4px 0 6px}
+.kp{
+  display:flex;gap:8px;align-items:baseline;padding:3px 0 3px 9px;cursor:pointer;
+  border-left:2px solid var(--line);font-size:12.5px;
+}
+.kp:hover{border-left-color:var(--accent);color:var(--accent-ink)}
+.kp.on{border-left-color:var(--accent);background:var(--sel)}
+.kp .kt{flex:1 1 auto;min-width:0}
+
+/* PPT 帧 */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pitem{border:1px solid var(--line);cursor:pointer;background:#000}
+.pitem:hover{border-color:var(--accent)}
+.pitem img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}
+.pitem .pt{font-size:11px;color:var(--faint);padding:2px 5px;background:var(--panel)}
+
+/* 字幕 */
+.subbar{display:flex;align-items:center;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.subbar label{font-size:11.5px;color:var(--dim);display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.cue{display:flex;gap:8px;padding:3px 0;font-size:12.5px;line-height:1.6;cursor:pointer}
+.cue:hover{background:var(--sel)}
+.cue .ct{flex:0 0 48px;color:var(--accent-ink);font-size:11.5px;font-variant-numeric:tabular-nums;padding-top:1px}
+.cue .cx{flex:1 1 auto;min-width:0;color:var(--ink)}
+.cue.on{background:var(--sel)}
+.cue.on .cx{font-weight:600}
+
+.toast{
+  position:fixed;right:14px;bottom:14px;z-index:40;max-width:320px;
+  background:var(--ink);color:var(--panel);font-size:12px;line-height:1.5;
+  padding:7px 11px;opacity:0;pointer-events:none;
+}
+.toast.on{opacity:1}

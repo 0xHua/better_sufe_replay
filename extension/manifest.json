@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "上财空中课堂 · 回放增强",
+  "version": "0.1.0",
+  "description": "为 dm.sufe.edu.cn 课程回放页提供倍速、书签、记忆进度与直链提取。",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage"],
+  "host_permissions": ["https://dm.sufe.edu.cn/*"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "回放增强"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://dm.sufe.edu.cn/*"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start",
+      "js": ["src/content.js"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; media-src https://dm.sufe.edu.cn blob:; img-src 'self' https://dm.sufe.edu.cn data:"
+  }
+}

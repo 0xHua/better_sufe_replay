@@ -1,0 +1,14 @@
+# 默认按文本处理，仓库里统一 LF；检出时按平台转换
+* text=auto eol=lf
+
+# Windows 批处理必须是 CRLF，否则续行符和某些命令会失效
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 二进制
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary
+*.mp4 binary

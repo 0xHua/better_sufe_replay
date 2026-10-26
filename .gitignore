@@ -1,0 +1,28 @@
+# ---------- 个人数据：绝对不能进仓库 ----------
+# 课程列表快照里有自己的 userCode（学号）
+app/data/courses.json
+
+# ---------- 抓包与站点原始响应 ----------
+# 原始 HTTP 记录里带会话 Cookie（S1_rman_sid），推上去等于交出登录态
+probe/
+# 学校页面的原始源码（只留作分析，不再分发）
+源代码.txt
+
+# ---------- 构建产物 ----------
+# 用 node tools/make_dist.js 重新生成
+dist/
+
+# ---------- 一次性的测量/调试脚本 ----------
+tools/_*.mjs
+
+# ---------- 浏览器调试配置 ----------
+.edge-profile/
+.edge-profile-*/
+*.crx
+*.pem
+
+# ---------- 系统垃圾 ----------
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store

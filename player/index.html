@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SUFE 回放增强器</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#151b23; --bg3:#1c2430; --line:#2a3441;
+    --fg:#e6edf3; --fg2:#9aa7b4; --accent:#4f8cff; --accent2:#7aa8ff;
+    --ok:#3fb950; --warn:#d29922; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.5 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  input,textarea{font:inherit;color:inherit}
+
+  /* ---------- 顶部 ---------- */
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .title{flex:1;min-width:120px;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 10px;font-weight:500}
+  .title:hover{border-color:var(--line)}
+  .title:focus{outline:none;border-color:var(--accent);background:var(--bg)}
+  .meta{color:var(--fg2);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  .urlbar{display:flex;gap:8px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+  .url{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px}
+  .url:focus{outline:none;border-color:var(--accent)}
+  .btn{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:8px 14px;white-space:nowrap;transition:.15s}
+  .btn:hover{border-color:#3d4b5c;background:#232e3c}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  .btn.sm{padding:4px 10px;font-size:12px}
+
+  /* ---------- 主体 ---------- */
+  .main{flex:1;display:flex;min-height:0}
+  .stage{position:relative;flex:1;min-width:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  video{width:100%;height:100%;object-fit:contain;background:#000}
+  .stage.idle{cursor:none}
+
+  .splash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(60% 60% at 50% 40%,#16202d 0%,#0a0e14 100%);transition:opacity .4s}
+  .splash.hidden{opacity:0}
+  .splash-inner{max-width:520px;text-align:center;padding:24px}
+  .splash h1{font-size:20px;margin:0 0 10px;font-weight:600}
+  .splash p{color:var(--fg2);margin:0;font-size:13px;line-height:1.8}
+
+  /* ---------- 控制条 ---------- */
+  .controls{position:absolute;left:0;right:0;bottom:0;padding:8px 14px 10px;
+    background:linear-gradient(to top,rgba(0,0,0,.92),rgba(0,0,0,.55) 60%,transparent);
+    opacity:1;transition:opacity .25s}
+  .stage.idle .controls{opacity:0}
+  .seek{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;display:block;margin:0}
+  .seek::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+    background:linear-gradient(to right,var(--accent) 0 var(--p,0%),rgba(255,255,255,.28) var(--p,0%) var(--b,0%),rgba(255,255,255,.13) var(--b,0%) 100%)}
+  .seek::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;margin-top:-3.5px;
+    box-shadow:0 0 0 4px rgba(79,140,255,.25);transition:transform .1s}
+  .seek:hover::-webkit-slider-thumb{transform:scale(1.15)}
+  .seek::-moz-range-track{height:6px;border-radius:3px;background:rgba(255,255,255,.13)}
+  .seek::-moz-range-progress{height:6px;border-radius:3px;background:var(--accent)}
+  .seek::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:#fff}
+
+  .cbar{display:flex;align-items:center;gap:6px;margin-top:2px}
+  .icon{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;transition:.15s}
+  .icon:hover{background:rgba(255,255,255,.12)}
+  .icon.text{width:auto;padding:0 10px;font-size:13px;font-variant-numeric:tabular-nums}
+  .time{font-size:12px;color:#cfd8e3;font-variant-numeric:tabular-nums;padding:0 4px}
+  .spacer{flex:1}
+  .vol{width:76px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+  .vol::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+  .vol::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:#fff;margin-top:-3.5px}
+  .vol::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+  .vol::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:#fff}
+
+  .menu{position:absolute;right:14px;bottom:56px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:6px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:120px;z-index:5}
+  .menu.open{display:block}
+  .menu button{display:flex;justify-content:space-between;width:100%;padding:6px 10px;border-radius:6px;font-size:13px}
+  .menu button:hover{background:var(--bg3)}
+  .menu button.on{color:var(--accent);font-weight:600}
+
+  .toast{position:absolute;left:50%;top:18px;transform:translateX(-50%) translateY(-8px);
+    background:rgba(20,26,34,.95);border:1px solid var(--line);padding:8px 16px;border-radius:999px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;z-index:9}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- 侧栏 ---------- */
+  .panel{width:320px;flex:0 0 320px;background:var(--bg2);border-left:1px solid var(--line);
+    overflow-y:auto;display:flex;flex-direction:column;gap:0}
+  .pblock{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .pblock h3{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;font-size:13px;font-weight:600;color:var(--fg2);letter-spacing:.5px}
+  .pblock h3 button{font-size:12px;color:var(--accent);font-weight:500}
+  .pblock h3 button:hover{text-decoration:underline}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  li{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:13px;cursor:pointer}
+  li:hover{background:var(--bg3)}
+  li .t{color:var(--accent);font-variant-numeric:tabular-nums;font-size:12px;flex:0 0 auto}
+  li .l{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  li .x{color:var(--fg2);opacity:0;font-size:12px;padding:0 4px}
+  li:hover .x{opacity:1}
+  li .x:hover{color:#f85149}
+  .empty{color:var(--fg2);font-size:12px;padding:6px 0}
+
+  .editor{display:none;flex-direction:column;gap:8px;margin-bottom:10px}
+  .editor.on{display:flex}
+  .editor textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical;min-height:64px;font-size:13px}
+  .editor textarea:focus{outline:none;border-color:var(--accent)}
+  .editor .row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--fg2)}
+
+  @media (max-width:820px){
+    .panel{display:none}
+    .vol{display:none}
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>SUFE 回放增强器</div>
+    <input id="title" class="title" placeholder="课程标题（自动保存）" />
+    <span id="meta" class="meta"></span>
+  </header>
+
+  <div class="urlbar">
+    <input id="url" class="url" spellcheck="false"
+           placeholder="粘贴视频直链（https://…/*.mp4），或带 ?src= 参数打开本页" />
+    <button id="load" class="btn primary">加载</button>
+    <button id="copy" class="btn">复制直链</button>
+  </div>
+
+  <main class="main">
+    <section class="stage" id="stage">
+      <video id="video" playsinline preload="metadata"></video>
+      <div class="splash" id="splash">
+        <div class="splash-inner">
+          <h1>把回放页面换成你自己的</h1>
+          <p>粘贴直链开始 · 倍速 / 记忆进度 / 书签 / 时间戳笔记 / 截图 / 画中画<br>
+             <span style="color:#6b7a89">快捷键：Space 播放 · ←→ 5s · J/L 10s · ↑↓ 音量 · [ ] 倍速 · S 截图 · B 书签 · N 笔记 · F 全屏</span></p>
+        </div>
+      </div>
+
+      <div class="controls" id="controls">
+        <input id="seek" class="seek" type="range" min="0" max="1000" step="1" value="0" />
+        <div class="cbar">
+          <button id="play" class="icon" title="播放 / 暂停 (Space)">▶</button>
+          <span class="time"><span id="cur">00:00</span> / <span id="dur">00:00</span></span>
+          <div class="spacer"></div>
+          <button id="speedBtn" class="icon text" title="倍速 ( [ / ] )">1.0×</button>
+          <button id="volBtn" class="icon" title="静音 (M)">🔊</button>
+          <input id="vol" class="vol" type="range" min="0" max="100" value="100" />
+          <button id="shot" class="icon" title="截图 (S)">📷</button>
+          <button id="pip" class="icon" title="画中画 (P)">⧉</button>
+          <button id="fs" class="icon" title="全屏 (F)">⛶</button>
+        </div>
+        <div class="menu" id="speedMenu"></div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </section>
+
+    <aside class="panel">
+      <section class="pblock">
+        <h3>书签 <button id="addMark">＋ 记下这一刻</button></h3>
+        <ul id="marks"></ul>
+        <div class="empty" id="marksEmpty">还没有书签。按 B 快速添加。</div>
+      </section>
+
+      <section class="pblock">
+        <h3>笔记 <button id="addNote">＋ 写笔记</button></h3>
+        <div class="editor" id="editor">
+          <textarea id="noteText" placeholder="这一刻讲了什么？"></textarea>
+          <div class="row"><span id="noteAt">00:00</span><button id="saveNote" class="btn primary sm">保存</button></div>
+        </div>
+        <ul id="notes"></ul>
+        <div class="empty" id="notesEmpty">还没有笔记。</div>
+      </section>
+    </aside>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const video = $('#video');
+  const stage = $('#stage');
+  const seek = $('#seek');
+  const curEl = $('#cur');
+  const durEl = $('#dur');
+  const metaEl = $('#meta');
+  const urlInput = $('#url');
+  const titleInput = $('#title');
+  const splash = $('#splash');
+  const toastEl = $('#toast');
+  const speedBtn = $('#speedBtn');
+  const speedMenu = $('#speedMenu');
+  const volEl = $('#vol');
+
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+  const ls = {
+    get(k, d) { try { const v = JSON.parse(localStorage.getItem('sufe.' + k)); return v === null ? d : v; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('sufe.' + k, JSON.stringify(v)); } catch {} },
+  };
+
+  const fmt = (t) => {
+    if (!isFinite(t) || t < 0) t = 0;
+    const s = Math.floor(t % 60), m = Math.floor(t / 60) % 60, h = Math.floor(t / 3600);
+    const p = (n) => String(n).padStart(2, '0');
+    return h ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+  };
+
+  const hash = (str) => {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  };
+  const norm = (u) => u.split('#')[0].split('?')[0];
+  let key = '';
+
+  /* ---------- 提示 ---------- */
+  let toastTimer = 0;
+  function toast(msg, ms = 1800) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+  }
+
+  /* ---------- 加载 ---------- */
+  let corsRetried = false;
+  function load(url, opts = {}) {
+    url = (url || '').trim();
+    if (!url) return toast('先粘贴一个视频直链');
+    if (!/^https?:|^blob:|^\//.test(url)) return toast('链接格式不对，需要 http(s) 开头');
+    corsRetried = false;
+    urlInput.value = url;
+    key = hash(norm(url));
+    titleInput.value = ls.get('title.' + key, '');
+    video.crossOrigin = 'anonymous';
+    video.src = url;
+    video.load();
+    splash.classList.add('hidden');
+    renderMarks();
+    renderNotes();
+    try { history.replaceState(null, '', '?src=' + encodeURIComponent(url)); } catch {}
+    if (opts.autoplay) video.play().catch(() => {});
+  }
+
+  video.addEventListener('error', () => {
+    if (video.crossOrigin && !corsRetried) {
+      corsRetried = true;
+      toast('跨域受限，已切换为普通模式（截图可能不可用）');
+      video.crossOrigin = null;
+      video.src = urlInput.value;
+      video.load();
+      return;
+    }
+    if (video.error) toast('加载失败：' + (video.error.message || '网络或链接已失效'));
+  });
+
+  /* ---------- 元信息与进度 ---------- */
+  let lastSave = 0;
+  function persist() {
+    if (!key || !isFinite(video.duration) || video.duration <= 0) return;
+    ls.set('pos.' + key, { t: video.currentTime, d: video.duration, at: Date.now() });
+    ls.set('rate.' + key, video.playbackRate);
+  }
+
+  video.addEventListener('loadedmetadata', () => {
+    durEl.textContent = fmt(video.duration);
+    metaEl.textContent = [
+      fmt(video.duration),
+      video.videoWidth ? `${video.videoWidth}×${video.videoHeight}` : '',
+      video.playbackRate !== 1 ? `${video.playbackRate}×` : '',
+    ].filter(Boolean).join(' · ');
+
+    const saved = ls.get('pos.' + key, null);
+    const rate = ls.get('rate.' + key, 1);
+    if (rate && rate !== 1 && SPEEDS.includes(rate)) setRate(rate, false);
+    if (saved && saved.d > 0 && Math.abs(saved.d - video.duration) < 30 && saved.t > 8 && saved.t < video.duration - 15) {
+      video.currentTime = saved.t;
+      toast(`已续播到 ${fmt(saved.t)}`);
+    }
+    paint();
+  });
+
+  video.addEventListener('timeupdate', () => {
+    paint();
+    if (Date.now() - lastSave > 3000) { lastSave = Date.now(); persist(); }
+  });
+  video.addEventListener('progress', paint);
+  video.addEventListener('play', () => { $('#play').textContent = '⏸'; });
+  video.addEventListener('pause', () => { $('#play').textContent = '▶'; persist(); });
+
+  function paint() {
+    const d = video.duration || 0;
+    const c = video.currentTime || 0;
+    const p = d ? (c / d) * 100 : 0;
+    let buffered = 0;
+    if (video.buffered && video.buffered.length) {
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (video.buffered.start(i) <= c + 0.25) buffered = Math.max(buffered, video.buffered.end(i));
+      }
+    }
+    const b = d ? (buffered / d) * 100 : 0;
+    seek.style.setProperty('--p', p + '%');
+    seek.style.setProperty('--b', Math.max(b, p) + '%');
+    if (!seeking) seek.value = Math.round(p * 10);
+    curEl.textContent = fmt(c);
+    durEl.textContent = d ? fmt(d) : '00:00';
+  }
+
+  let seeking = false;
+  seek.addEventListener('input', () => {
+    seeking = true;
+    if (isFinite(video.duration) && video.duration > 0) {
+      curEl.textContent = fmt((seek.value / 1000) * video.duration);
+    }
+  });
+  seek.addEventListener('change', () => {
+    if (isFinite(video.duration) && video.duration > 0) {
+      video.currentTime = (seek.value / 1000) * video.duration;
+    }
+    seeking = false;
+  });
+
+  /* ---------- 播放控制 ---------- */
+  const toggle = () => { if (video.paused) video.play().catch(() => toast('浏览器阻止了自动播放，点一下画面')); else video.pause(); };
+  $('#play').addEventListener('click', toggle);
+  stage.addEventListener('click', (e) => {
+    if (e.target.closest('.controls') || e.target.closest('.menu')) return;
+    toggle();
+  });
+  stage.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.controls')) return;
+    toggleFs();
+  });
+
+  function setRate(r, notify = true) {
+    video.playbackRate = r;
+    speedBtn.textContent = (Number.isInteger(r) ? String(r) : String(r)) + '×';
+    speedMenu.querySelectorAll('button').forEach((b) => b.classList.toggle('on', Number(b.dataset.r) === r));
+    if (key) ls.set('rate.' + key, r);
+    if (notify) toast(`${r}× 速度`);
+  }
+
+  SPEEDS.forEach((r) => {
+    const b = document.createElement('button');
+    b.dataset.r = r;
+    b.innerHTML = `<span>${r}×</span><span>${r === 1 ? '正常' : ''}</span>`;
+    b.addEventListener('click', () => { setRate(r); speedMenu.classList.remove('open'); });
+    speedMenu.appendChild(b);
+  });
+
+  speedBtn.addEventListener('click', (e) => { e.stopPropagation(); speedMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => speedMenu.classList.remove('open'));
+
+  function toggleMute() {
+    video.muted = !video.muted;
+    $('#volBtn').textContent = video.muted || video.volume === 0 ? '🔇' : '🔊';
+    toast(video.muted ? '静音' : '取消静音');
+  }
+  $('#volBtn').addEventListener('click', toggleMute);
+  volEl.addEventListener('input', () => { video.volume = volEl.value / 100; video.muted = false; $('#volBtn').textContent = '🔊'; });
+
+  function toggleFs() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else stage.requestFullscreen().catch(() => toast('当前浏览器不允许全屏'));
+  }
+  $('#fs').addEventListener('click', toggleFs);
+  document.addEventListener('fullscreenchange', () => { $('#fs').textContent = document.fullscreenElement ? '⤢' : '⛶'; });
+
+  $('#pip').addEventListener('click', async () => {
+    try {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else await video.requestPictureInPicture();
+    } catch { toast('画中画不可用'); }
+  });
+
+  async function shot() {
+    if (!video.videoWidth) return toast('视频还没加载');
+    try {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0);
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/png');
+      a.download = `frame-${fmt(video.currentTime).replace(/:/g, '-')}.png`;
+      a.click();
+      toast('已截图');
+    } catch { toast('截图失败：视频源不允许跨域读取'); }
+  }
+  $('#shot').addEventListener('click', shot);
+
+  $('#copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(urlInput.value); toast('直链已复制'); }
+    catch { toast('复制失败，请手动选中'); }
+  });
+
+  /* ---------- 书签 ---------- */
+  function marks() { return ls.get('marks.' + key, []); }
+  function saveMarks(list) { ls.set('marks.' + key, list); renderMarks(); }
+
+  function renderMarks() {
+    const ul = $('#marks');
+    const list = key ? marks() : [];
+    ul.innerHTML = '';
+    $('#marksEmpty').style.display = list.length ? 'none' : '';
+    list.forEach((m, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="t">${fmt(m.t)}</span><span class="l"></span><button class="x" title="删除">✕</button>`;
+      li.querySelector('.l').textContent = m.label || fmt(m.t);
+      li.addEventListener('click', (e) => {
+        if (e.target.classList.contains('x')) return;
+        video.currentTime = m.t; video.play().catch(() => {});
+      });
+      li.querySelector('.x').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const l2 = marks(); l2.splice(i, 1); saveMarks(l2);
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function addMark() {
+    if (!key) return toast('先加载视频');
+    const list = marks();
+    const t = video.currentTime;
+    list.push({ t, label: fmt(t) });
+    list.sort((a, b) => a.t - b.t);
+    saveMarks(list);
+    toast(`书签 ${fmt(t)}`);
+  }
+  $('#addMark').addEventListener('click', addMark);
+
+  /* ---------- 笔记 ---------- */
+  function notes() { return ls.get('notes.' + key, []); }
+  function saveNotes(list) { ls.set('notes.' + key, list); renderNotes(); }
+
+  let editingAt = 0;
+  function openEditor() {
+    if (!key) return toast('先加载视频');
+    editingAt = video.currentTime;
+    $('#noteAt').textContent = '记于 ' + fmt(editingAt);
+    $('#editor').classList.add('on');
+    $('#noteText').focus();
+  }
+  $('#addNote').addEventListener('click', openEditor);
+  $('#saveNote').addEventListener('click', () => {
+    const text = $('#noteText').value.trim();
+    if (!text) return toast('内容为空');
+    const list = notes();
+    list.push({ t: editingAt, text, at: Date.now() });
+    list.sort((a, b) => a.t - b.t);
+    saveNotes(list);
+    $('#noteText').value = '';
+    $('#editor').classList.remove('on');
+    toast('笔记已保存');
+  });
+
+  function renderNotes() {
+    const ul = $('#notes');
+    const list = key ? notes() : [];
+    ul.innerHTML = '';
+    $('#notesEmpty').style.display = list.length ? 'none' : '';
+    list.forEach((n, i) => {
+      const li = document.createElement('li');
+      li.style.alignItems = 'flex-start';
+      li.innerHTML = `<span class="t">${fmt(n.t)}</span><span class="l"></span><button class="x" title="删除">✕</button>`;
+      const l = li.querySelector('.l');
+      l.textContent = n.text;
+      l.style.whiteSpace = 'normal';
+      li.addEventListener('click', (e) => {
+        if (e.target.classList.contains('x')) return;
+        video.currentTime = n.t; video.play().catch(() => {});
+      });
+      li.querySelector('.x').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const l2 = notes(); l2.splice(i, 1); saveNotes(l2);
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------- 标题 ---------- */
+  titleInput.addEventListener('input', () => { if (key) ls.set('title.' + key, titleInput.value); });
+
+  /* ---------- 快捷键 ---------- */
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    const step = e.shiftKey ? 30 : 5;
+    switch (e.key) {
+      case ' ': e.preventDefault(); toggle(); break;
+      case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - step); toast(`-${step}s`); break;
+      case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + step); toast(`+${step}s`); break;
+      case 'j': case 'J': video.currentTime = Math.max(0, video.currentTime - 10); toast('-10s'); break;
+      case 'l': case 'L': video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); toast('+10s'); break;
+      case 'ArrowUp': e.preventDefault(); video.volume = Math.min(1, video.volume + 0.05); volEl.value = video.volume * 100; toast(`音量 ${Math.round(video.volume * 100)}%`); break;
+      case 'ArrowDown': e.preventDefault(); video.volume = Math.max(0, video.volume - 0.05); volEl.value = video.volume * 100; toast(`音量 ${Math.round(video.volume * 100)}%`); break;
+      case 'm': case 'M': toggleMute(); break;
+      case 'f': case 'F': toggleFs(); break;
+      case 'p': case 'P': $('#pip').click(); break;
+      case 's': case 'S': shot(); break;
+      case 'b': case 'B': addMark(); break;
+      case 'n': case 'N': openEditor(); break;
+      case '[': {
+        const i = SPEEDS.indexOf(video.playbackRate);
+        setRate(SPEEDS[Math.max(0, (i < 0 ? SPEEDS.indexOf(1) : i) - 1)]); break;
+      }
+      case ']': {
+        const i = SPEEDS.indexOf(video.playbackRate);
+        setRate(SPEEDS[Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + 1)]); break;
+      }
+      case '?': toast('Space 播放 · ←→ 5s · J/L 10s · ↑↓ 音量 · [ ] 倍速 · S 截图 · B 书签 · N 笔记 · F 全屏 · P 画中画', 5000); break;
+      default: break;
+    }
+  });
+
+  /* ---------- 控件自动隐藏 ---------- */
+  let idleTimer = 0;
+  function wake() {
+    stage.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { if (!video.paused) stage.classList.add('idle'); }, 2600);
+  }
+  stage.addEventListener('mousemove', wake);
+  stage.addEventListener('mouseleave', () => { if (!video.paused) stage.classList.add('idle'); });
+
+  /* ---------- 启动 ---------- */
+  const params = new URLSearchParams(location.search);
+  const src = params.get('src');
+  if (src) load(src);
+  else {
+    const last = ls.get('lastUrl', '');
+    if (last) {
+      urlInput.value = last;
+      urlInput.addEventListener('focus', () => urlInput.select(), { once: true });
+    }
+  }
+  urlInput.addEventListener('change', () => ls.set('lastUrl', urlInput.value.trim()));
+  $('#load').addEventListener('click', () => load(urlInput.value, { autoplay: true }));
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); load(urlInput.value, { autoplay: true }); } });
+
+  window.addEventListener('beforeunload', persist);
+  setInterval(() => { if (!video.paused) persist(); }, 5000);
+})();
+</script>
+</body>
+</html>

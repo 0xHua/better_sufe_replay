@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SUFE 回放增强器</title>
+<link rel="stylesheet" href="player.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>SUFE 回放增强器</div>
+    <input id="title" class="title" placeholder="课程标题（自动保存）" />
+    <span id="meta" class="meta"></span>
+  </header>
+
+  <div class="urlbar">
+    <input id="url" class="url" spellcheck="false"
+           placeholder="粘贴视频直链（https://…/*.mp4），或带 ?src= 参数打开本页" />
+    <button id="load" class="btn primary">加载</button>
+    <button id="copy" class="btn">复制直链</button>
+  </div>
+
+  <main class="main">
+    <section class="stage" id="stage">
+      <video id="video" playsinline preload="metadata"></video>
+      <div class="splash" id="splash">
+        <div class="splash-inner">
+          <h1>把回放页面换成你自己的</h1>
+          <p>粘贴直链开始 · 倍速 / 记忆进度 / 书签 / 时间戳笔记 / 截图 / 画中画<br>
+             <span style="color:#6b7a89">快捷键：Space 播放 · ←→ 5s · J/L 10s · ↑↓ 音量 · [ ] 倍速 · S 截图 · B 书签 · N 笔记 · F 全屏</span></p>
+        </div>
+      </div>
+
+      <div class="controls" id="controls">
+        <input id="seek" class="seek" type="range" min="0" max="1000" step="1" value="0" />
+        <div class="cbar">
+          <button id="play" class="icon" title="播放 / 暂停 (Space)">▶</button>
+          <span class="time"><span id="cur">00:00</span> / <span id="dur">00:00</span></span>
+          <div class="spacer"></div>
+          <button id="speedBtn" class="icon text" title="倍速 ( [ / ] )">1.0×</button>
+          <button id="volBtn" class="icon" title="静音 (M)">🔊</button>
+          <input id="vol" class="vol" type="range" min="0" max="100" value="100" />
+          <button id="shot" class="icon" title="截图 (S)">📷</button>
+          <button id="pip" class="icon" title="画中画 (P)">⧉</button>
+          <button id="fs" class="icon" title="全屏 (F)">⛶</button>
+        </div>
+        <div class="menu" id="speedMenu"></div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </section>
+
+    <aside class="panel">
+      <section class="pblock">
+        <h3>书签 <button id="addMark">＋ 记下这一刻</button></h3>
+        <ul id="marks"></ul>
+        <div class="empty" id="marksEmpty">还没有书签。按 B 快速添加。</div>
+      </section>
+
+      <section class="pblock">
+        <h3>笔记 <button id="addNote">＋ 写笔记</button></h3>
+        <div class="editor" id="editor">
+          <textarea id="noteText" placeholder="这一刻讲了什么？"></textarea>
+          <div class="row"><span id="noteAt">00:00</span><button id="saveNote" class="btn primary sm">保存</button></div>
+        </div>
+        <ul id="notes"></ul>
+        <div class="empty" id="notesEmpty">还没有笔记。</div>
+      </section>
+    </aside>
+  </main>
+
+<script src="player.js"></script>
+</body>
+</html>

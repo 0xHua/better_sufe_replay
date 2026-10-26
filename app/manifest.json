@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "空中课堂 · 回放",
+  "short_name": "空中课堂",
+  "version": "0.5.0",
+  "description": "把学校的课程回放换成一个更好用的界面：自动读课表、课程缓存、按节次直接看 PPT 与教师画面的 MP4，双屏同看、字幕与知识要点侧栏。数据只在你自己登录的浏览器里读取，不经过任何服务器。",
+  "permissions": ["storage", "downloads"],
+  "host_permissions": ["https://dm.sufe.edu.cn/*"],
+  "background": { "service_worker": "ext/background.js" },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://dm.sufe.edu.cn/*"],
+      "js": ["ext/content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_title": "空中课堂 · 回放",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  }
+}

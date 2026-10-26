@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>空中课堂 · 回放</title>
+<link rel="icon" href="icon-48.png">
+<style>
+:root{
+  --bg:#f5f5f2; --panel:#fdfdfc; --ink:#1b1c1e; --dim:#70737a; --faint:#9a9da3;
+  --line:#e3e3de; --line2:#d3d3cd; --accent:#8b1d2c; --accent-ink:#8b1d2c;
+  --sel:#f0eaea;
+}
+html[data-theme="dark"]{
+  --bg:#141517; --panel:#1b1d20; --ink:#e7e7e2; --dim:#8e9196; --faint:#6a6d72;
+  --line:#292c30; --line2:#383c41; --accent:#c8354a; --accent-ink:#e0576a;
+  --sel:#241d1f;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:14px/1.5 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+input{background:none;border:0;outline:none}
+
+/* ---------- 顶栏（一级） ---------- */
+.topbar{
+  height:46px; display:flex; align-items:center; gap:14px;
+  padding:0 16px; background:var(--panel); border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:10;
+}
+.brand{display:flex;align-items:center;gap:8px;font-size:14px;letter-spacing:.02em}
+.brand .mark{width:3px;height:15px;background:var(--accent);display:inline-block}
+.brand b{font-weight:600}
+.brand .sep{color:var(--faint)}
+.topbar .meta{margin-left:auto;display:flex;align-items:center;gap:9px;color:var(--dim);font-size:12px}
+.dot{width:6px;height:6px;border:1px solid var(--dim);display:inline-block}
+.dot.live{background:var(--accent);border-color:var(--accent)}
+.btn{border:1px solid var(--line2);padding:4px 10px;font-size:12px;color:var(--dim)}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#74161f;color:#fff}
+
+/* ---------- 布局 ---------- */
+.layout{display:grid;grid-template-columns:212px 1fr;min-height:calc(100vh - 46px)}
+
+/* ---------- 侧栏（二级） ---------- */
+.side{border-right:1px solid var(--line);background:var(--panel);padding:10px 0 40px}
+.side-h{
+  padding:12px 16px 6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);
+}
+.nav{list-style:none;margin:0;padding:0}
+.nav li{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:5px 16px;font-size:13px;color:var(--dim);cursor:pointer;
+  border-left:3px solid transparent;
+}
+.nav li:hover{color:var(--ink);background:var(--sel)}
+.nav li.cur{color:var(--ink);font-weight:600}
+.nav li.on{color:var(--accent-ink);border-left-color:var(--accent);background:var(--sel);font-weight:600}
+.nav li .n{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+.nav li.on .n{color:var(--accent-ink)}
+.side-foot{margin:16px 16px 0;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+.side-foot button{font-size:12px;color:var(--dim);border:1px solid var(--line2);padding:3px 8px}
+.side-foot button:hover{color:var(--accent-ink);border-color:var(--accent)}
+.side-foot button.armed{background:var(--accent);border-color:var(--accent);color:#fff}
+.side-foot button.armed:hover{color:#fff}
+
+/* ---------- 提示条 ---------- */
+.toast{
+  position:fixed;right:16px;bottom:16px;z-index:50;max-width:440px;
+  background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--accent);
+  padding:9px 13px;font-size:12px;line-height:1.6;color:var(--ink);
+}
+.toast b{font-weight:600}
+
+/* ---------- 主区 ---------- */
+.main{padding:0 0 40px;min-width:0}
+.toolbar{
+  display:flex;align-items:center;gap:12px;padding:10px 18px;
+  border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:46px;z-index:9;
+}
+.toolbar input{
+  width:280px;border:1px solid var(--line2);padding:5px 9px;font-size:13px;background:var(--panel);
+}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar input::placeholder{color:var(--faint)}
+.spacer{flex:1}
+.seg{display:flex;border:1px solid var(--line2)}
+.seg button{padding:5px 10px;font-size:12px;color:var(--dim);border-left:1px solid var(--line2)}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ---------- 表头 / 行（三级） ---------- */
+.thead,.row{
+  display:grid;grid-template-columns:minmax(180px,1.5fr) 110px 130px 168px 150px 58px;
+  align-items:center;gap:10px;padding:0 18px;
+}
+.thead{
+  height:30px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  border-bottom:1px solid var(--line);background:var(--bg);
+}
+.thead .r,.row .r{text-align:right}
+.rows{list-style:none;margin:0;padding:0}
+.row{
+  min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;
+  border-left:3px solid transparent;
+}
+.row:hover{background:var(--sel)}
+.row.on{border-left-color:var(--accent);background:var(--sel)}
+.row.gone .name{color:var(--faint)}
+.row .name{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{font-size:11px;color:var(--faint);margin-top:1px}
+.row .t{font-size:13px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .views{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px}
+.row .tag{
+  display:inline-block;font-size:11px;color:var(--accent-ink);border:1px solid var(--accent);
+  padding:0 4px;margin-left:6px;line-height:15px;vertical-align:1px;
+}
+.badge{
+  display:inline-block;font-size:10px;line-height:14px;padding:0 4px;margin-left:5px;
+  border:1px solid var(--line2);color:var(--faint);vertical-align:1px;letter-spacing:.02em;
+}
+.badge.hot{color:var(--accent-ink);border-color:var(--accent)}
+.badge.gone{color:var(--faint);border-style:dashed}
+
+/* ---------- 详情抽屉 ---------- */
+.detail{
+  border-bottom:1px solid var(--line);background:var(--panel);
+  padding:14px 18px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px 22px;font-size:13px;
+}
+.detail .wide{grid-column:span 2}
+.detail .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.detail .v{color:var(--ink);word-break:break-all}
+.detail .v.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--dim)}
+.detail .note{grid-column:1/-1;color:var(--dim);font-size:12px;border-top:1px dashed var(--line2);padding-top:10px;margin-top:2px}
+.detail .cacheline{grid-column:1/-1;color:var(--faint);font-size:11px;font-family:ui-monospace,Consolas,monospace}
+.detail .media{grid-column:1/-1;border-top:1px dashed var(--line2);padding-top:11px;margin-top:2px}
+.detail .media .mb{margin-top:6px}
+.muted{color:var(--dim)}
+.warn{color:var(--accent-ink)}
+.btn.mini{padding:2px 8px;font-size:11.5px;margin-left:6px}
+.mchips{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 8px}
+.mchip{font-size:11.5px;padding:2px 8px;border:1px solid var(--line2);color:var(--dim);cursor:pointer;user-select:none}
+.mchip:hover{border-color:var(--accent);color:var(--accent-ink)}
+.mchip.on{border-color:var(--accent);color:var(--accent-ink);background:var(--sel);font-weight:600}
+.media-links{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+.mline{display:flex;align-items:stretch;background:var(--panel)}
+.mlink{display:flex;align-items:baseline;gap:10px;padding:8px 11px;background:var(--panel);color:var(--ink);text-decoration:none;font-size:12.5px;flex:1 1 auto;min-width:0}
+.mlink:hover{background:var(--sel);text-decoration:none}
+.mraw{padding:8px 11px;color:var(--faint);text-decoration:none;font-size:11.5px;border-left:1px solid var(--line);white-space:nowrap}
+.mraw:hover{color:var(--accent-ink);text-decoration:none;background:var(--sel)}
+.mtag{font-weight:600;color:var(--accent-ink);min-width:70px}
+.mname{color:var(--dim)}
+.msize{margin-left:auto;color:var(--faint);font-variant-numeric:tabular-nums}
+.mgo{color:var(--faint);min-width:52px;text-align:right}
+.mlink:hover .mgo{color:var(--accent-ink)}
+.mhint{color:var(--faint);font-size:11px;margin-top:6px}
+.mdual{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 9px}
+.dlink{font-size:12.5px;color:#fff;background:var(--accent);text-decoration:none;padding:6px 12px}
+.dlink:hover{background:var(--accent-ink);text-decoration:none}
+.mdual .muted{font-size:11px}
+.src{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2);grid-column:1/-1}
+.src .k{margin-bottom:7px}
+.src .k .muted{font-weight:400;font-size:11px;margin-left:6px}
+.srct{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
+.srct th{text-align:left;font-weight:500;color:var(--faint);padding:3px 8px 3px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.srct td{padding:4px 8px 4px 0;color:var(--dim);border-bottom:1px solid var(--line);vertical-align:top}
+.srct td:first-child{color:var(--ink);white-space:nowrap}
+.srct td:nth-child(2){color:var(--faint);overflow-wrap:anywhere}
+.srct th:nth-child(1),.srct td:nth-child(1){width:19%}
+.srct th:nth-child(2),.srct td:nth-child(2){width:43%}
+.srct th:nth-child(3),.srct td:nth-child(3){width:10%}
+.srct th:nth-child(4),.srct td:nth-child(4){width:10%}
+.srct th:nth-child(5),.srct td:nth-child(5){width:8%}
+.srct th:nth-child(6),.srct td:nth-child(6){width:10%}
+.srct td:nth-child(3),.srct td:nth-child(4),.srct td:nth-child(5){white-space:nowrap}
+.srct tr:last-child td{border-bottom:none}
+.empty{padding:40px 18px;color:var(--faint);font-size:13px}
+.loader{max-width:640px;margin:56px auto;padding:0 24px;font-size:13px;color:var(--dim);line-height:1.8}
+.loader-h{font-size:15px;color:var(--ink);font-weight:600;margin-bottom:10px}
+.loader p{margin:0 0 10px}
+.loader ol{margin:0 0 10px;padding-left:20px}
+.loader li{margin:4px 0}
+.loader code{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--sel);padding:1px 4px}
+.loader .hint{color:var(--faint);font-size:12px;margin-top:16px;border-top:1px dashed var(--line2);padding-top:12px}
+.loader .btn{margin-left:4px}
+
+.ask{display:flex;align-items:center;gap:12px;padding:9px 16px;background:var(--sel);border-bottom:1px solid var(--line);font-size:12.5px}
+.ask[hidden]{display:none}
+.ask-t{font-weight:600;color:var(--ink);border-left:3px solid var(--accent);padding-left:9px;white-space:nowrap}
+.ask-d{color:var(--dim);flex:1}
+.foot{padding:14px 18px;color:var(--faint);font-size:11px;border-top:1px solid var(--line);background:var(--panel)}
+
+@media (max-width:1040px){
+  .thead,.row{grid-template-columns:minmax(160px,1.6fr) 100px 168px 58px}
+  .thead span:nth-child(3),.row>span:nth-child(3),
+  .thead span:nth-child(5),.row>span:nth-child(5){display:none}
+  .detail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .layout{grid-template-columns:1fr}
+  .side{display:none}
+  .toolbar input{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark"></span>空中课堂<span class="sep">/</span><b>回放</b></div>
+  <div class="meta">
+    <span class="dot" id="srcDot"></span><span id="srcText">本地快照</span>
+    <span class="sep statsep">·</span><span id="stat">读取中</span>
+    <span class="sep">·</span><span id="cacheStat">缓存 —</span>
+    <button class="btn" id="themeBtn">深色</button>
+  </div>
+</header>
+
+<div class="ask" id="askLogin" hidden>
+  <span class="ask-t">还没有登录学校账号</span>
+  <span class="ask-d">点「去登录」在统一认证页登录一次；登录完切回这个标签页会自动更新，也可以点「重新检查」。</span>
+  <button class="btn primary" id="loginBtn">去登录</button>
+  <button class="btn" id="recheckBtn">重新检查</button>
+</div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="side-h">视图</div>
+    <ul class="nav" id="scopeNav"></ul>
+    <div class="side-h">学期</div>
+    <ul class="nav" id="semNav"></ul>
+    <div class="side-h">学院</div>
+    <ul class="nav" id="collegeNav"></ul>
+    <div class="side-h">教师</div>
+    <ul class="nav" id="teacherNav"></ul>
+    <div class="side-foot">
+      <button id="pickBtn">导入数据</button>
+      <button id="exportBtn">导出缓存</button>
+      <button id="clearBtn">清空缓存</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <input id="q" placeholder="搜索课程 / 教师 / 教室　( / 聚焦 )">
+      <div class="spacer"></div>
+      <div class="seg" id="sortSeg">
+        <button data-sort="default" class="on">默认</button>
+        <button data-sort="views">回放次数</button>
+        <button data-sort="name">课程名</button>
+      </div>
+    </div>
+    <div class="thead">
+      <span>课程</span><span>教师</span><span>学院</span><span>上课时间</span><span>教室</span><span class="r">回放</span>
+    </div>
+    <ul class="rows" id="rows"></ul>
+    <div class="empty" id="empty" hidden>没有匹配的课程</div>
+
+    <div class="loader" id="loader" hidden>
+      <div class="loader-h" id="loaderH">还没有课程数据</div>
+      <div id="loaderBody">
+        <p>这个页面<b>不自带数据</b>，启动时去读 <code>data/courses.json</code>。</p>
+        <p>直接双击打开时（<code>file://</code>），浏览器不允许网页读本地文件，所以两种方式任选：</p>
+        <ol>
+          <li>起本地服务：双击 <code>tools\start-server.cmd</code>，然后打开
+              <code>http://127.0.0.1:8730/app/</code>；</li>
+          <li>手动导入：<button class="btn" id="pickBtn2">选择一个 JSON 文件</button></li>
+        </ol>
+        <p class="hint">数据文件用 <code>node tools\fetch_courses.js</code> 从学校接口重新抓取。</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="foot">
+  数据 <span id="footCount">—</span> 门 · 读取自 <span id="footSrc">—</span> · 记录于 <span id="footAt">—</span> ·
+  全部保存在本机浏览器，不上传
+</footer>
+
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+<div class="toast" id="toast" hidden></div>
+
+<script src="ext/bridge.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
